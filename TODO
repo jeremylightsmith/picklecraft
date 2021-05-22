@@ -1,7 +1,11 @@
 
+[x] create a block at an x,y,z coordinate through the server
 
-[ ] give the server a reference to the world
-[ ] create a block at an x,y,z coordinate through the server
-[ ] send a thing to the server
+Story: cage all mobs w/in 20 blocks w/ ice blocks
+  [ ] receive slash command
+  [ ] know where mobs are w/in 20 blocks
+  [ ] know where the ground is w/in 20 blocks (nice to have)
+
+[ ] receive /event executed
 [ ] stop server when world shuts down
 [ ] should we be using gRPC?

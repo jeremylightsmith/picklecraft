@@ -18,6 +18,8 @@ import java.io.*;
 import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -53,14 +55,16 @@ public class WebServer {
             try {
                 String path = String.format("%s %s", t.getRequestMethod(), t.getRequestURI());
 
-                switch (path) {
-                    case "POST /blocks/new":
-                        response = placeBlock(parseParams(t.getRequestBody()));
-                        break;
-
-                    case "GET /players":
-                        response = getPlayers();
-                        break;
+                if (path.equals("POST /blocks/new")) {
+                    response = placeBlock(parseParams(t.getRequestBody()));
+                } else if (path.equals("GET /players")) {
+                    response = getPlayers();
+                } else {
+                    Pattern getPlayerByName = Pattern.compile("^GET /players/(.*)$");
+                    Matcher matchPlayerByName = getPlayerByName.matcher(path);
+                    if (matchPlayerByName.find()) {
+                        response = getPlayer(matchPlayerByName.group(1));
+                    }
                 }
             } catch(Exception e) {
                 e.printStackTrace();
@@ -109,6 +113,8 @@ public class WebServer {
                     return Blocks.WATER;
                 case "ACACIA_WOOD":
                     return Blocks.ACACIA_WOOD;
+                case "DIAMOND_BLOCK":
+                    return Blocks.DIAMOND_BLOCK;
                 default:
                     return Blocks.AIR;
             }
@@ -120,19 +126,17 @@ public class WebServer {
 
             JSONArray jPlayers = new JSONArray();
             for (ServerPlayerEntity player : players) {
-                JSONArray jPosition = new JSONArray();
-                jPosition.add(player.position().x);
-                jPosition.add(player.position().y);
-                jPosition.add(player.position().z);
-
-                JSONObject jPlayer = new JSONObject();
-                jPlayer.put("id", player.getId());
-                jPlayer.put("name", player.getName().getString());
-                jPlayer.put("position", jPosition);
-                jPlayers.add(jPlayer);
+                jPlayers.add(playerToJSON(player));
             }
-
             return jPlayers.toString();
+        }
+
+        private String getPlayer(String name) {
+            LOGGER.info("name = " + name);
+            ServerWorld world = this.server.overworld();
+            List<ServerPlayerEntity> players = world.getPlayers(player -> player.getName().getString().equals(name));
+
+            return players.size() > 0 ? playerToJSON(players.get(0)).toString() : new JSONObject().toString();
         }
 
         private String readStream(InputStream stream) throws IOException {
@@ -152,6 +156,19 @@ public class WebServer {
             } catch (ParseException e) {
                 throw new IOException(e);
             }
+        }
+
+        private JSONObject playerToJSON(ServerPlayerEntity player) {
+            JSONArray jPosition = new JSONArray();
+            jPosition.add(player.position().x);
+            jPosition.add(player.position().y);
+            jPosition.add(player.position().z);
+
+            JSONObject jPlayer = new JSONObject();
+            jPlayer.put("id", player.getId());
+            jPlayer.put("name", player.getName().getString());
+            jPlayer.put("position", jPosition);
+            return jPlayer;
         }
     }
 }
