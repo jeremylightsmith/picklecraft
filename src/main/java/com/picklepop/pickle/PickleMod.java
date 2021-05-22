@@ -66,11 +66,16 @@ public class PickleMod
                 map(m->m.getMessageSupplier().get()).
                 collect(Collectors.toList()));
     }
+
     // You can use SubscribeEvent and let the Event Bus discover methods to call
     @SubscribeEvent
-    public void onServerStarting(FMLServerStartingEvent event) {
+    public void onServerStarting(FMLServerStartingEvent event) throws Exception {
         // do something when the server starts
         LOGGER.info("HELLO from server starting");
+
+        MinecraftForge.EVENT_BUS.register(new PickleEventHandler());
+
+        new WebServer(event.getServer()).start();
     }
 
     // You can use EventBusSubscriber to automatically subscribe events on the contained class (this is subscribing to the MOD

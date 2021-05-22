@@ -1,0 +1,7 @@
+
+
+[ ] give the server a reference to the world
+[ ] create a block at an x,y,z coordinate through the server
+[ ] send a thing to the server
+[ ] stop server when world shuts down
+[ ] should we be using gRPC?
