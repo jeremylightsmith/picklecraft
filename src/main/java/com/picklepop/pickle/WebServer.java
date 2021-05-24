@@ -115,6 +115,8 @@ public class WebServer {
                     return Blocks.ACACIA_WOOD;
                 case "DIAMOND_BLOCK":
                     return Blocks.DIAMOND_BLOCK;
+                case "GLASS":
+                    return Blocks.GLASS;
                 default:
                     return Blocks.AIR;
             }
