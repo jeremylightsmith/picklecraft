@@ -2,6 +2,8 @@ package com.picklepop.pickle;
 
 import com.mojang.brigadier.ParseResults;
 import net.minecraft.command.CommandSource;
+import net.minecraft.entity.Entity;
+import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.common.MinecraftForge;
@@ -9,6 +11,8 @@ import net.minecraftforge.event.CommandEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -75,12 +79,11 @@ public class SocketServer extends Thread {
 
     @SubscribeEvent
     public void executeCommand(CommandEvent event) {
-        ParseResults<CommandSource> results = event.getParseResults();
-        String command = results.getReader().getString();
-        LOGGER.info("executing command " + command);
+        JSONObject json = new JSONWriter().commandEvent(event);
+        LOGGER.info("command: " + json.toJSONString());
 
         commandListeners.forEach(listener -> {
-            listener.add(command);
+            listener.add(json.toJSONString());
         });
     }
 
