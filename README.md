@@ -14,7 +14,7 @@ Setup Process:
     1. Run the following command: `./gradlew genIntellijRuns`
     1. Refresh the Gradle Project in IDEA if required.
 
-1. To run the client, pickles [runClient] in IDEA
+1. To run the client, picklecraft [runClient] in IDEA
 
 If at any point you are missing libraries in your IDE, or you've run into problems you can 
 run `gradlew --refresh-dependencies` to refresh the local cache. `gradlew clean` to reset everything 

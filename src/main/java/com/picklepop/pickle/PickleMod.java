@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 @Mod(PickleMod.MOD_ID)
 public class PickleMod
 {
-    public static final String MOD_ID = "pickles";
+    public static final String MOD_ID = "picklecraft";
 
     // Directly reference a log4j logger.
     private static final Logger LOGGER = LogManager.getLogger();
