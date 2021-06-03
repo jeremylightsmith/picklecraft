@@ -30,7 +30,7 @@ public class JSONWriter {
     public JSONArray players(List<ServerPlayerEntity> players) {
         JSONArray json = new JSONArray();
         for (ServerPlayerEntity player : players) {
-            json.add(player(player));
+            json.add(this.player(player));
         }
         return json;
     }

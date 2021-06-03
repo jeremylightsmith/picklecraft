@@ -3,8 +3,6 @@ package com.picklepop.pickle;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
-import net.minecraft.entity.EntityPredicate;
-import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.math.BlockPos;
@@ -13,10 +11,8 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.*;
 import java.net.InetSocketAddress;
-import java.util.Map;
 
 import org.json.simple.JSONObject;
-import org.json.simple.parser.*;
 // import org.json.simple.*;
 
 
@@ -48,26 +44,25 @@ public class WebServer {
             String path = String.format("%s %s", t.getRequestMethod(), t.getRequestURI());
             try {
                 String response = "";
-                Params params = Params.parse(t.getRequestBody());
                 switch (path) {
                     case "POST /place_block":
-                        response = placeBlock(params);
+                        response = placeBlock(getParams(t));
                         break;
                     case "GET /players":
                         response = getPlayers();
                         break;
                     case "POST /nearby_entities":
-                        response = getNearbyEntities(params);
+                        response = getNearbyEntities(getParams(t));
                         break;
                     case "POST /player":
-                        response = getPlayer(params);
+                        response = getPlayer(getParams(t));
                         break;
                     default:
                         System.out.println("Not found " + path);
                         renderText(t, "Not found", 404);
                         return;
                 }
-                System.out.println(path + ": " + params.toString());
+                System.out.println(path + ": " + t.getRequestBody());
                 renderText(t, response, 200);
 
             } catch (Exception e) {
@@ -83,6 +78,10 @@ public class WebServer {
             OutputStream os = t.getResponseBody();
             os.write(responseBodyBytes);
             os.close();
+        }
+
+        private Params getParams(HttpExchange t) throws IOException {
+            return Params.parse(t.getRequestBody());
         }
 
         private String getNearbyEntities(Params params) {
