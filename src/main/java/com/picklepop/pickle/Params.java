@@ -1,5 +1,7 @@
 package com.picklepop.pickle;
 
+import net.minecraft.util.math.BlockPos;
+import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
@@ -23,7 +25,15 @@ public class Params {
     }
 
     public int getInt(String name) {
-        Object val = map.get(name);
+        return objectToInt(map.get(name));
+    }
+
+    public BlockPos getBlockPos(String name) {
+        JSONArray array = (JSONArray) map.get(name);
+        return new BlockPos(objectToInt(array.get(0)), objectToInt(array.get(1)), objectToInt(array.get(2)));
+    }
+
+    private static int objectToInt(Object val) {
         if (val instanceof Number) {
             return ((Number) val).intValue();
         } else {

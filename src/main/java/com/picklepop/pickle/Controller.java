@@ -1,10 +1,14 @@
 package com.picklepop.pickle;
 
+import net.minecraft.block.BlockState;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.util.math.BlockPos;
+import org.json.simple.JSONArray;
 import org.json.simple.JSONAware;
 import org.json.simple.JSONObject;
+
+import java.util.stream.Stream;
 
 class Controller {
     private final WorldFacade model;
@@ -17,26 +21,35 @@ class Controller {
     }
 
     public JSONAware getNearbyEntities(Params params) {
-        ServerPlayerEntity player = model.getPlayer(params.getString("player_name"));
+        ServerPlayerEntity player = model.getPlayer(params.getString("playerName"));
         int range = params.getInt("range");
 
-        return json.livingEntitiesToJson(model.getNearbyEntities(player, range));
+        return json.streamToArray(
+                model.getNearbyEntities(player, range).stream().map(json::livingEntityToJson));
     }
 
     public JSONAware placeBlock(Params params) {
-        BlockPos pos = new BlockPos(
-                params.getInt("x"),
-                params.getInt("y"),
-                params.getInt("z")
-        );
-
-        model.placeBlock(params.getString("type"), pos);
-
+        model.placeBlock(params.getString("type"), params.getBlockPos("position"));
         return json.statusToJson("OK");
     }
 
+    public JSONAware placeBlocks(Params params) {
+        model.placeBlocks(params.getString("type"),
+                params.getBlockPos("fromPosition"),
+                params.getBlockPos("toPosition"));
+        return json.statusToJson("OK");
+    }
+
+    public JSONAware getBlocks(Params params) {
+        Stream<BlockState> blocks = model.getBlocks(
+                params.getBlockPos("fromPosition"),
+                params.getBlockPos("toPosition"));
+        return json.streamToArray(blocks.map(json::blockStateToJson));
+    }
+
     public JSONAware getPlayers(Params params) {
-        return json.playersToJson(model.getPlayers());
+        return json.streamToArray(
+                model.getPlayers().stream().map(json::playerToJson));
     }
 
     public JSONAware getPlayer(Params params) {
