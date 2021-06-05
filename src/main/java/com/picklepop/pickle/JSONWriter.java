@@ -50,7 +50,7 @@ public class JSONWriter {
         if (blockState.getValues().size() > 0) {
             JSONObject propsJson = new JSONObject();
             blockState.getValues().forEach((property, comparable) -> {
-                propsJson.put(property, comparable.toString());
+                propsJson.put(property.getName(), comparable.toString());
             });
             json.put("properties", propsJson);
         }

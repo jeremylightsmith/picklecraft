@@ -109,17 +109,12 @@ public class SocketServer extends Thread {
                 while(true) {
                     try {
                         String message = messageQueue.take();
+                        System.out.println("sending: " + message);
                         out.println(message);
                     } catch (InterruptedException e) {
-                        // nothing
+                        System.out.println("interrupted");
                     }
                 }
-//
-//                String line;
-//                while ((line = in.readLine()) != null) {
-//                    System.out.printf(" Sent from the client: %s\n", line);
-//                    out.println(line);
-//                }
             } catch (IOException e) {
                 e.printStackTrace();
             } finally {
