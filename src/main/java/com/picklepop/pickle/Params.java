@@ -49,4 +49,8 @@ public class Params {
             throw new IOException(e);
         }
     }
+
+    public String toString() {
+        return this.map.toString();
+    }
 }

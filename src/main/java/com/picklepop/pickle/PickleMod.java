@@ -73,9 +73,13 @@ public class PickleMod
         // do something when the server starts
         LOGGER.info("HELLO from server starting");
 
-        MinecraftForge.EVENT_BUS.register(new PickleEventHandler());
+        TheBoot boot = new TheBoot();
 
-        new WebServer(event.getServer()).start();
+        MinecraftForge.EVENT_BUS.register(new PickleEventHandler());
+        // comment this line out to actually play minecraft
+        MinecraftForge.EVENT_BUS.register(boot);
+
+        new WebServer(event.getServer(), boot).start();
 
         new SocketServer(event.getServer()).start();
     }

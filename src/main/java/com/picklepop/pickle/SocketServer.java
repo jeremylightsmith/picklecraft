@@ -79,7 +79,7 @@ public class SocketServer extends Thread {
 
     @SubscribeEvent
     public void executeCommand(CommandEvent event) {
-        JSONObject json = new JSONWriter().commandEvent(event);
+        JSONObject json = new JSONWriter().commandEventToJson(event);
         LOGGER.info("command: " + json.toJSONString());
 
         commandListeners.forEach(listener -> {

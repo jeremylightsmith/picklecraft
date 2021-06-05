@@ -1,8 +1,6 @@
 package com.picklepop.pickle;
 
-import net.minecraft.block.Blocks;
 import net.minecraftforge.event.entity.player.EntityItemPickupEvent;
-import net.minecraftforge.event.world.BlockEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -14,19 +12,6 @@ public class PickleEventHandler {
     @SubscribeEvent
     public void pickupItem(EntityItemPickupEvent event) {
 //        LOGGER.info("Item picked up!");
-    }
-
-
-    @SubscribeEvent
-    public void breakItem(BlockEvent.BreakEvent event) {
-//        LOGGER.info("Broke a block!");
-
-        if (event.getState().getBlock() == Blocks.DIAMOND_ORE) {
-
-        }
-
-        if (event.getState().getBlock() == Blocks.COBBLESTONE) {
-        }
     }
 
 //    @SubscribeEvent

@@ -14,7 +14,7 @@ import org.json.simple.JSONObject;
 import java.util.List;
 
 public class JSONWriter {
-    public JSONObject commandEvent(CommandEvent event) {
+    public JSONObject commandEventToJson(CommandEvent event) {
         String command = event.getParseResults().getReader().getString();
         JSONObject json = new JSONObject();
         json.put("event", "command_event");
@@ -22,50 +22,50 @@ public class JSONWriter {
 
         Entity entity = event.getParseResults().getContext().getSource().getEntity();
         if (entity instanceof ServerPlayerEntity) {
-            json.put("player", player((ServerPlayerEntity) entity));
+            json.put("player", playerToJson((ServerPlayerEntity) entity));
         }
         return json;
     }
 
-    public JSONArray players(List<ServerPlayerEntity> players) {
+    public JSONArray playersToJson(List<ServerPlayerEntity> players) {
         JSONArray json = new JSONArray();
         for (ServerPlayerEntity player : players) {
-            json.add(this.player(player));
+            json.add(this.playerToJson(player));
         }
         return json;
     }
 
-    public JSONArray livingEntities(List<LivingEntity> entities) {
+    public JSONArray livingEntitiesToJson(List<LivingEntity> entities) {
         JSONArray json = new JSONArray();
         for (LivingEntity entity : entities) {
-            json.add(livingEntity(entity));
+            json.add(livingEntityToJson(entity));
         }
         return json;
     }
 
-    public JSONObject player(ServerPlayerEntity player) {
-        JSONObject json = livingEntity(player);
+    public JSONObject playerToJson(ServerPlayerEntity player) {
+        JSONObject json = livingEntityToJson(player);
         return json;
     }
 
-    public JSONObject livingEntity(LivingEntity entity) {
+    public JSONObject livingEntityToJson(LivingEntity entity) {
         JSONObject json = new JSONObject();
         json.put("id", entity.getId());
         json.put("name", entity.getName().getString());
-        json.put("position", position(entity.position()));
-        json.put("rotation", rotation(entity.getRotationVector()));
+        json.put("position", positionToJson(entity.position()));
+        json.put("rotation", rotationToJson(entity.getRotationVector()));
         return json;
     }
 
-    public JSONArray position(Vector3d v) {
-        return array(v.x, v.y, v.z);
+    public JSONArray positionToJson(Vector3d v) {
+        return arrayToJson(v.x, v.y, v.z);
     }
 
-    public JSONArray rotation(Vector2f v) {
-        return array(v.x, v.y);
+    public JSONArray rotationToJson(Vector2f v) {
+        return arrayToJson(v.x, v.y);
     }
 
-    public JSONArray array(Object a, Object b, Object c) {
+    public JSONArray arrayToJson(Object a, Object b, Object c) {
         JSONArray json = new JSONArray();
         json.add(a);
         json.add(b);
@@ -73,10 +73,16 @@ public class JSONWriter {
         return json;
     }
 
-    public JSONArray array(Object a, Object b) {
+    public JSONArray arrayToJson(Object a, Object b) {
         JSONArray json = new JSONArray();
         json.add(a);
         json.add(b);
+        return json;
+    }
+
+    public JSONObject statusToJson(String status) {
+        JSONObject json = new JSONObject();
+        json.put("status", status);
         return json;
     }
 }

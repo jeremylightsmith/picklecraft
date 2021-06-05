@@ -10,6 +10,7 @@ import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.server.ServerWorld;
 
+import java.util.ArrayList;
 import java.util.List;
 
 class WorldFacade {
@@ -56,7 +57,15 @@ class WorldFacade {
 
     public ServerPlayerEntity getPlayer(String name) {
         List<ServerPlayerEntity> players = getWorld().getPlayers(player -> player.getName().getString().equals(name));
-        return players.size() > 0 ? players.get(0) : null;
+
+        if (players.size() == 0) {
+            List<String> names = new ArrayList<>();
+            getWorld().getPlayers(p -> true).forEach(p -> names.add(p.getName().getString()));
+            throw new RuntimeException("Can't find player: " + name + ". Server only has players: " +
+                    String.join(", ", names));
+        }
+
+        return players.get(0);
     }
 
     public List<LivingEntity> getNearbyEntities(ServerPlayerEntity player, int range) {
@@ -70,5 +79,24 @@ class WorldFacade {
                         player.position().x + range,
                         player.position().y + range,
                         player.position().z + range));
+    }
+
+    public void setDayTime(String time) {
+        getWorld().setDayTime(getTimeFromName(time));
+    }
+
+    private long getTimeFromName(String time) {
+        switch (time) {
+            case "day":
+                return 1000;
+            case "night":
+                return 13000;
+            case "noon":
+                return 6000;
+            case "midnight":
+                return 18000;
+            default:
+                return 1000;
+        }
     }
 }

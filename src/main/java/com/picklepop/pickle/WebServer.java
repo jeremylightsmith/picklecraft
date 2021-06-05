@@ -3,73 +3,77 @@ package com.picklepop.pickle;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
-import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.math.BlockPos;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.*;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
 
+import org.json.simple.JSONAware;
 import org.json.simple.JSONObject;
 // import org.json.simple.*;
 
 
 public class WebServer {
     private static final Logger LOGGER = LogManager.getLogger();
-    private MinecraftServer server;
+    private final Controller controller;
 
-    public WebServer(MinecraftServer server) {
-        this.server = server;
+    public WebServer(MinecraftServer server, TheBoot boot) {
+        controller = new Controller(server, boot);
     }
 
     public void start() throws Exception {
         LOGGER.info("starting server...");
         HttpServer server = HttpServer.create(new InetSocketAddress(3200), 0);
-        server.createContext("/", new Controller(this.server));
+        server.createContext("/", new RequestHandler(controller));
         server.setExecutor(null); // creates a default executor
         server.start();
     }
 
-    static class Controller implements HttpHandler {
-        private WorldFacade model;
-        private final JSONWriter json = new JSONWriter();
+    static class RequestHandler implements HttpHandler {
+        private final Controller controller;
 
-        public Controller(MinecraftServer server) {
-            this.model = new WorldFacade(server);
+        public RequestHandler(Controller controller) {
+            this.controller = controller;
         }
 
         public void handle(HttpExchange t) throws IOException {
-            String path = String.format("%s %s", t.getRequestMethod(), t.getRequestURI());
+            if (!t.getRequestMethod().equals("POST") || !t.getRequestURI().toString().equals("/rpc")) {
+                renderText(t, "Not found, try POST /rpc", 404);
+                return;
+            }
+
+            Params params = Params.parse(t.getRequestBody());
+            System.out.println(params);
+
             try {
-                String response = "";
-                switch (path) {
-                    case "POST /place_block":
-                        response = placeBlock(getParams(t));
-                        break;
-                    case "GET /players":
-                        response = getPlayers();
-                        break;
-                    case "POST /nearby_entities":
-                        response = getNearbyEntities(getParams(t));
-                        break;
-                    case "POST /player":
-                        response = getPlayer(getParams(t));
-                        break;
-                    default:
-                        System.out.println("Not found " + path);
-                        renderText(t, "Not found", 404);
-                        return;
-                }
-                System.out.println(path + ": " + t.getRequestBody());
-                renderText(t, response, 200);
+                Method method = Controller.class.getMethod(params.getString("method"), Params.class);
+                JSONAware json = (JSONAware) method.invoke(controller, params);
+                renderText(t, json.toJSONString(), 200);
+
+            } catch (NoSuchMethodException e) {
+                System.out.println("Not found");
+                renderError(t, "Not found: " + params.toString(), 404);
+
+            } catch (InvocationTargetException e) {
+                System.out.println("Exception:");
+                e.getTargetException().printStackTrace();
+                renderError(t, e.getTargetException().getMessage(), 500);
 
             } catch (Exception e) {
-                System.out.println("Exception " + path);
+                System.out.println("Exception:");
                 e.printStackTrace();
-                renderText(t, e.getMessage(), 500);
+                renderError(t, e.getMessage(), 500);
             }
+        }
+
+        private void renderError(HttpExchange t, String error, int status) throws IOException {
+            JSONObject json = new JSONObject();
+            json.put("error", error);
+            renderText(t, json.toJSONString(), status);
         }
 
         private void renderText(HttpExchange t, String body, int status) throws IOException {
@@ -78,38 +82,6 @@ public class WebServer {
             OutputStream os = t.getResponseBody();
             os.write(responseBodyBytes);
             os.close();
-        }
-
-        private Params getParams(HttpExchange t) throws IOException {
-            return Params.parse(t.getRequestBody());
-        }
-
-        private String getNearbyEntities(Params params) {
-            ServerPlayerEntity player = model.getPlayer(params.getString("player_name"));
-            int range = params.getInt("range");
-
-            return json.livingEntities(model.getNearbyEntities(player, range)).toJSONString();
-        }
-
-        private String placeBlock(Params params) {
-            BlockPos pos = new BlockPos(
-                    params.getInt("x"),
-                    params.getInt("y"),
-                    params.getInt("z")
-            );
-
-            model.placeBlock(params.getString("type"), pos);
-
-            return "OK";
-        }
-
-        private String getPlayers() {
-            return json.players(model.getPlayers()).toJSONString();
-        }
-
-        private String getPlayer(Params params) {
-            ServerPlayerEntity player = model.getPlayer(params.getString("name"));
-            return player != null ? json.player(player).toJSONString() : new JSONObject().toJSONString();
         }
     }
 }
