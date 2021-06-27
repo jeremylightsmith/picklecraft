@@ -79,9 +79,7 @@ public class PickleMod
         // comment this line out to actually play minecraft
         MinecraftForge.EVENT_BUS.register(boot);
 
-        new WebServer(event.getServer(), boot).start();
-
-        new SocketServer(event.getServer()).start();
+        new SocketServer(event.getServer(), boot).start();
     }
 
     // You can use EventBusSubscriber to automatically subscribe events on the contained class (this is subscribing to the MOD
