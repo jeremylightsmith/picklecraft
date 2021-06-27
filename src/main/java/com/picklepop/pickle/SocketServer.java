@@ -11,8 +11,14 @@ import net.minecraftforge.event.CommandEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.json.simple.JSONArray;
+import org.json.simple.JSONAware;
+import org.json.simple.JSONValue;
 import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
+
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -31,9 +37,11 @@ public class SocketServer extends Thread {
     private static final Logger LOGGER = LogManager.getLogger();
     private MinecraftServer server;
     private List<BlockingQueue<String>> commandListeners = new LinkedList<>();
+    private TheBoot boot;
 
-    public SocketServer(MinecraftServer server) {
+    public SocketServer(MinecraftServer server, TheBoot boot) {
         this.server = server;
+        this.boot = boot;
     }
 
     public MinecraftServer getServer() {
@@ -54,14 +62,14 @@ public class SocketServer extends Thread {
 
         try {
             MinecraftForge.EVENT_BUS.register(this);
-            socket = new ServerSocket(3201);
+            socket = new ServerSocket(3200);
             socket.setReuseAddress(true);
 
             while (true) {
                 Socket client = socket.accept();
                 System.out.println("New client connected: " + client.getInetAddress().getHostAddress());
 
-                new Thread(new MyHandler(this, client)).start();
+                new Thread(new MyConnectionHandler(this, client)).start();
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -87,24 +95,27 @@ public class SocketServer extends Thread {
         });
     }
 
-    static class MyHandler implements Runnable {
+    static class MyConnectionHandler implements Runnable {
         private final Socket socket;
         private final SocketServer server;
 
-        public MyHandler(SocketServer server, Socket socket) {
+        public MyConnectionHandler(SocketServer server, Socket socket) {
             this.server = server;
             this.socket = socket;
         }
 
         public void run() {
+
             BlockingQueue<String> messageQueue = new LinkedBlockingDeque<>();
             this.server.getCommandListeners().add(messageQueue);
+
+            new Thread(new MyRequestHandler(this.server, this.socket, messageQueue)).start();
 
             PrintWriter out = null;
             BufferedReader in = null;
             try {
                 out = new PrintWriter(socket.getOutputStream(), true);
-                in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+//                in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
                 while(true) {
                     try {
@@ -123,7 +134,7 @@ public class SocketServer extends Thread {
 
                 try {
                     if (out != null) out.close();
-                    if (in != null) in.close();
+//                    if (in != null) in.close();
                     socket.close();
                 } catch (IOException e) {
                     e.printStackTrace();
@@ -131,4 +142,98 @@ public class SocketServer extends Thread {
             }
         }
     }
+
+
+    static class MyRequestHandler implements Runnable {
+        private final Socket socket;
+        private final SocketServer server;
+        private final BlockingQueue<String> messageQueue;
+        private final Controller controller;
+
+        public MyRequestHandler(SocketServer server, Socket socket, BlockingQueue<String> messageQueue) {
+            this.server = server;
+            this.socket = socket;
+            this.messageQueue = messageQueue;
+            this.controller = new Controller(server.server, server.boot);
+        }
+
+        public void run() {
+            PrintWriter out = null;
+            BufferedReader in = null;
+            try {
+                in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+                while(true) {
+                    String message = in.readLine();
+                    if( message == null ) {
+                        System.out.println("disconnected");
+                        break;
+                    }
+                    System.out.println("received: " + message);
+                    JSONObject json = new JSONObject();
+                    try {
+                        json = handleMessage(message, json);
+                    } catch (Exception e) {
+                        System.out.println("Exception:");
+                        e.printStackTrace();
+                        json.put("status", "ERROR");
+                        json.put("error", e.getMessage());
+                    } finally {
+                        this.messageQueue.add(json.toJSONString() + "\n");
+                    }
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            } finally {
+                LOGGER.info("stopping listening for ...");
+
+                try {
+                    if (in != null) in.close();
+                    socket.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        JSONObject handleMessage(String message, JSONObject json) throws Exception {
+            Params request;
+
+            try {
+                request = Params.parse(message);
+                System.out.println("recompiled: " + request.toString());
+            } catch (ParseException e) {
+                System.out.println("JSOM parse error");
+                json.put("status", "ERROR");
+                json.put("error", "JSON parse error: " + e.getMessage());
+                return json;
+            }
+
+            String methodName = request.getString("method");
+            System.out.println("method: " + methodName);
+            Method method;
+
+            try {
+                method = Controller.class.getMethod(methodName, Params.class);
+            } catch (NoSuchMethodException e) {
+                System.out.println("Not found");
+                json.put("status", "ERROR");
+                json.put("error", "Not found: " + request.toString());
+                return json;
+            }
+
+            try {
+                JSONAware result = (JSONAware) method.invoke(this.controller, request);
+                json.put("status", "OK");
+                json.put("result", result);
+                return json;
+            } catch (InvocationTargetException e) {
+                System.out.println("Exception:");
+                e.getTargetException().printStackTrace();
+                json.put("status", "ERROR");
+                json.put("error", e.getTargetException().getMessage());
+                return json;
+            }
+        }
+    }
+
 }
