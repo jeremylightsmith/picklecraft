@@ -115,7 +115,6 @@ public class SocketServer extends Thread {
             BufferedReader in = null;
             try {
                 out = new PrintWriter(socket.getOutputStream(), true);
-//                in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
                 while(true) {
                     try {
