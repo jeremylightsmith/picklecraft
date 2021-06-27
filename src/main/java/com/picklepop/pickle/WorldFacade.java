@@ -3,8 +3,12 @@ package com.picklepop.pickle;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.Blocks;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityPredicate;
+import net.minecraft.entity.EntityType;
 import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.passive.BatEntity;
+import net.minecraft.entity.passive.PigEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.ServerPlayerEntity;
 import net.minecraft.server.MinecraftServer;
@@ -12,6 +16,7 @@ import net.minecraft.util.ResourceLocation;
 import net.minecraft.util.math.AxisAlignedBB;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.vector.Vector3d;
+import net.minecraft.util.registry.Registry;
 import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.fml.RegistryObject;
 import net.minecraftforge.fml.common.registry.GameRegistry;
@@ -22,6 +27,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 class WorldFacade {
@@ -72,6 +78,14 @@ class WorldFacade {
             throw new RuntimeException("Couldn't find block: " + type);
     }
 
+    public EntityType<?> getEntityType(String type) {
+        Optional<EntityType<?>> entityType = EntityType.byString(type);
+        if (entityType.isPresent())
+            return entityType.get();
+        else
+            throw new RuntimeException("Couldn't find entity type: " + type);
+    }
+
     public List<ServerPlayerEntity> getPlayers() {
         return getWorld().players();
     }
@@ -94,8 +108,11 @@ class WorldFacade {
         player.travel(pos);
     }
 
-    public void placeEntity() {
-        // tbd
+    public void spawnEntity(String type, Vector3d pos) {
+        ServerWorld world = getWorld();
+        Entity entity = getEntityType(type).create(world);
+        entity.setPos(pos.x, pos.y, pos.z);
+        world.addFreshEntity(entity);
     }
 
     public List<LivingEntity> getNearbyEntities(ServerPlayerEntity player, int range) {
