@@ -57,6 +57,12 @@ class Controller {
         return player != null ? json.playerToJson(player) : new JSONObject();
     }
 
+    public JSONAware movePlayer(Params params) {
+        ServerPlayerEntity player = model.getPlayer(params.getString("name"));
+        model.moveEntity(player, params.getVector3d("position"));
+        return json.statusToJson("OK");
+    }
+
     public JSONAware liftBoot(Params params) {
         this.boot.liftBoot(30);
         return json.statusToJson("OK");

@@ -1,36 +1,34 @@
 package com.picklepop.pickle;
 
-import com.mojang.brigadier.ParseResults;
-import net.minecraft.command.CommandSource;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.util.math.vector.Vector3i;
 import net.minecraft.world.server.ServerWorld;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.CommandEvent;
+import net.minecraftforge.event.entity.living.LivingEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.json.simple.JSONAware;
-import org.json.simple.JSONValue;
 import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
-
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
-// import org.json.simple.*;
 
 
 public class SocketServer extends Thread {
@@ -38,6 +36,12 @@ public class SocketServer extends Thread {
     private MinecraftServer server;
     private List<BlockingQueue<String>> commandListeners = new LinkedList<>();
     private TheBoot boot;
+    private Map<String, PlayerState> playerStates = new HashMap<>();
+
+    static class PlayerState {
+        public String name;
+        public Vector3i position;
+    }
 
     public SocketServer(MinecraftServer server, TheBoot boot) {
         this.server = server;
@@ -87,11 +91,37 @@ public class SocketServer extends Thread {
 
     @SubscribeEvent
     public void executeCommand(CommandEvent event) {
-        JSONObject json = new JSONWriter().commandEventToJson(event);
-        LOGGER.info("command: " + json.toJSONString());
+        fireEvent(new JSONWriter().commandEventToJson(event));
+    }
 
+    @SubscribeEvent
+    public void playerUpdate(LivingEvent.LivingUpdateEvent event) {
+        LivingEntity entity = event.getEntityLiving();
+        if (entity instanceof PlayerEntity) {
+            PlayerEntity player = (PlayerEntity) entity;
+            String name = player.getName().getContents();
+
+            Vector3i pos = new Vector3i(player.position().x, player.position().y, player.position().z);
+            PlayerState state = playerStates.get(name);
+            if (state == null) {
+                state = new PlayerState();
+                state.name = name;
+                state.position = pos;
+                playerStates.put(name, state);
+            } else if (!state.position.equals(pos)) {
+                state.position = pos;
+            } else {
+                return;
+            }
+
+            fireEvent(new JSONWriter().playerMoveEventToJson(player));
+        }
+    }
+
+    private void fireEvent(JSONObject event) {
+//        LOGGER.info("event: " + event.toJSONString());
         commandListeners.forEach(listener -> {
-            listener.add(json.toJSONString());
+            listener.add(event.toJSONString());
         });
     }
 
