@@ -1,9 +1,9 @@
 package com.picklepop.pickle;
 
-import net.minecraft.block.BlockState;
-import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.core.BlockPos;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONAware;
 import org.json.simple.JSONObject;
@@ -21,7 +21,7 @@ class Controller {
     }
 
     public JSONAware getNearbyEntities(Params params) {
-        ServerPlayerEntity player = model.getPlayer(params.getString("playerName"));
+        ServerPlayer player = model.getPlayer(params.getString("playerName"));
         int range = params.getInt("range");
 
         return json.streamToArray(
@@ -53,12 +53,12 @@ class Controller {
     }
 
     public JSONAware getPlayer(Params params) {
-        ServerPlayerEntity player = model.getPlayer(params.getString("name"));
+        ServerPlayer player = model.getPlayer(params.getString("name"));
         return player != null ? json.playerToJson(player) : new JSONObject();
     }
 
     public JSONAware spawnEntity(Params params) {
-        model.spawnEntity(params.getString("type"), params.getVector3d("position"));
+        model.spawnEntity(params.getString("type"), params.getVec3("position"));
         return json.statusToJson("OK");
     }
 

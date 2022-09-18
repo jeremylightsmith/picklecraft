@@ -1,7 +1,7 @@
 package com.picklepop.pickle;
 
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.vector.Vector3d;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.Vec3;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -34,9 +34,9 @@ public class Params {
         return new BlockPos(objectToInt(array.get(0)), objectToInt(array.get(1)), objectToInt(array.get(2)));
     }
 
-    public Vector3d getVector3d(String name) {
+    public Vec3 getVec3(String name) {
         JSONArray array = (JSONArray) map.get(name);
-        return new Vector3d(objectToInt(array.get(0)), objectToInt(array.get(1)), objectToInt(array.get(2)));
+        return new Vec3(objectToInt(array.get(0)), objectToInt(array.get(1)), objectToInt(array.get(2)));
     }
 
     private static int objectToInt(Object val) {

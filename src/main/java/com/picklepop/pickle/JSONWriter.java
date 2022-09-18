@@ -1,12 +1,12 @@
 package com.picklepop.pickle;
 
-import net.minecraft.block.BlockState;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.util.math.vector.Vector2f;
-import net.minecraft.util.math.vector.Vector3d;
-import net.minecraft.util.math.vector.Vector3i;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.phys.Vec2;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.core.Vec3i;
 import net.minecraftforge.event.CommandEvent;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
@@ -21,20 +21,20 @@ public class JSONWriter {
         json.put("command", command);
 
         Entity entity = event.getParseResults().getContext().getSource().getEntity();
-        if (entity instanceof PlayerEntity) {
-            json.put("player", playerToJson((PlayerEntity) entity));
+        if (entity instanceof Player) {
+            json.put("player", playerToJson((Player) entity));
         }
         return json;
     }
 
-    public JSONObject playerMoveEventToJson(PlayerEntity player) {
+    public JSONObject playerMoveEventToJson(Player player) {
         JSONObject json = new JSONObject();
         json.put("type", "player_move_event");
         json.put("player", playerToJson(player));
         return json;
     }
 
-    public JSONObject playerToJson(PlayerEntity player) {
+    public JSONObject playerToJson(Player player) {
         JSONObject json = livingEntityToJson(player);
         return json;
     }
@@ -50,7 +50,7 @@ public class JSONWriter {
 
     public JSONObject blockStateToJson(BlockState blockState) {
         JSONObject json = new JSONObject();
-        json.put("type", blockState.getBlock().getRegistryName().toString());
+        json.put("type", blockState.getBlock().getName().toString());
         if (blockState.getValues().size() > 0) {
             JSONObject propsJson = new JSONObject();
             blockState.getValues().forEach((property, comparable) -> {
@@ -61,15 +61,15 @@ public class JSONWriter {
         return json;
     }
 
-    public JSONArray positionToJson(Vector3d v) {
+    public JSONArray positionToJson(Vec3 v) {
         return arrayToJson(v.x, v.y, v.z);
     }
 
-    public JSONArray positionToJson(Vector3i v) {
+    public JSONArray positionToJson(Vec3i v) {
         return arrayToJson(v.getX(), v.getY(), v.getZ());
     }
 
-    public JSONArray rotationToJson(Vector2f v) {
+    public JSONArray rotationToJson(Vec2 v) {
         return arrayToJson(v.x, v.y);
     }
 

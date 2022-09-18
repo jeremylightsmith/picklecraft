@@ -1,10 +1,10 @@
 package com.picklepop.pickle;
 
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.core.Vec3i;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.math.vector.Vector3i;
-import net.minecraft.world.server.ServerWorld;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraftforge.common.MinecraftForge;
 import net.minecraftforge.event.CommandEvent;
 import net.minecraftforge.event.entity.living.LivingEvent;
@@ -40,7 +40,7 @@ public class SocketServer extends Thread {
 
     static class PlayerState {
         public String name;
-        public Vector3i position;
+        public Vec3i position;
     }
 
     public SocketServer(MinecraftServer server, TheBoot boot) {
@@ -52,7 +52,7 @@ public class SocketServer extends Thread {
         return server;
     }
 
-    public ServerWorld getWorld() {
+    public ServerLevel getWorld() {
         return server.overworld();
     }
 
@@ -95,13 +95,13 @@ public class SocketServer extends Thread {
     }
 
     @SubscribeEvent
-    public void playerUpdate(LivingEvent.LivingUpdateEvent event) {
-        LivingEntity entity = event.getEntityLiving();
-        if (entity instanceof PlayerEntity) {
-            PlayerEntity player = (PlayerEntity) entity;
-            String name = player.getName().getContents();
+    public void playerUpdate(LivingEvent.LivingTickEvent event) {
+        LivingEntity entity = event.getEntity();
+        if (entity instanceof Player) {
+            Player player = (Player) entity;
+            String name = player.getName().getString();
 
-            Vector3i pos = new Vector3i(player.position().x, player.position().y, player.position().z);
+            Vec3i pos = new Vec3i(player.position().x, player.position().y, player.position().z);
             PlayerState state = playerStates.get(name);
             if (state == null) {
                 state = new PlayerState();

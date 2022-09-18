@@ -1,27 +1,22 @@
 package com.picklepop.pickle;
 
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityPredicate;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.LivingEntity;
-import net.minecraft.entity.passive.BatEntity;
-import net.minecraft.entity.passive.PigEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.ServerPlayerEntity;
+import net.minecraft.world.entity.ai.targeting.TargetingConditions;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.advancements.critereon.EntityPredicate;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.ResourceLocation;
-import net.minecraft.util.math.AxisAlignedBB;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.vector.Vector3d;
-import net.minecraft.util.registry.Registry;
-import net.minecraft.world.server.ServerWorld;
-import net.minecraftforge.fml.RegistryObject;
-import net.minecraftforge.fml.common.registry.GameRegistry;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.phys.Vec3;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraftforge.registries.ForgeRegistries;
-import net.minecraftforge.registries.IForgeRegistry;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -38,7 +33,7 @@ class WorldFacade {
         this.server = server;
     }
 
-    public ServerWorld getWorld() {
+    public ServerLevel getWorld() {
         return this.server.overworld();
     }
 
@@ -47,7 +42,7 @@ class WorldFacade {
     }
 
     public void placeBlocks(String type, BlockPos from, BlockPos to) {
-        ServerWorld world = getWorld();
+        ServerLevel world = getWorld();
         BlockState blockState = getBlock(type).defaultBlockState();
         int x1 = Math.min(from.getX(), to.getX());
         int x2 = Math.max(from.getX(), to.getX());
@@ -66,16 +61,21 @@ class WorldFacade {
     }
 
     public Stream<BlockState> getBlocks(BlockPos from, BlockPos to) {
-        return getWorld().getBlockStates(new AxisAlignedBB(from, to));
+        return getWorld().getBlockStates(new AABB(from, to));
     }
 
     public Block getBlock(String type) {
-        IForgeRegistry<Block> registry = GameRegistry.findRegistry(Block.class);
-        Block block = registry.getValue(new ResourceLocation(type));
+        Block block = ForgeRegistries.BLOCKS.getValue(new ResourceLocation(type));
         if (block != null)
             return block;
         else
             throw new RuntimeException("Couldn't find block: " + type);
+//        IForgeRegistry<Block> registry = GameRegistry.findRegistry(Block.class);
+//        Block block = registry.getValue(new ResourceLocation(type));
+//        if (block != null)
+//            return block;
+//        else
+//            throw new RuntimeException("Couldn't find block: " + type);
     }
 
     public EntityType<?> getEntityType(String type) {
@@ -86,12 +86,12 @@ class WorldFacade {
             throw new RuntimeException("Couldn't find entity type: " + type);
     }
 
-    public List<ServerPlayerEntity> getPlayers() {
+    public List<ServerPlayer> getPlayers() {
         return getWorld().players();
     }
 
-    public ServerPlayerEntity getPlayer(String name) {
-        List<ServerPlayerEntity> players = getWorld().getPlayers(player -> player.getName().getString().equals(name));
+    public ServerPlayer getPlayer(String name) {
+        List<ServerPlayer> players = getWorld().getPlayers(player -> player.getName().getString().equals(name));
 
         if (players.size() == 0) {
             List<String> names = new ArrayList<>();
@@ -103,23 +103,23 @@ class WorldFacade {
         return players.get(0);
     }
 
-    public void moveEntity(PlayerEntity player, Vector3d pos) {
+    public void moveEntity(Player player, Vec3 pos) {
         LOGGER.info("Player " + player.getName().getContents() + " -> " + pos);
         player.travel(pos);
     }
 
-    public void spawnEntity(String type, Vector3d pos) {
-        ServerWorld world = getWorld();
+    public void spawnEntity(String type, Vec3 pos) {
+        ServerLevel world = getWorld();
         Entity entity = getEntityType(type).create(world);
         entity.setPos(pos.x, pos.y, pos.z);
         world.addFreshEntity(entity);
     }
 
-    public List<LivingEntity> getNearbyEntities(ServerPlayerEntity player, int range) {
+    public List<LivingEntity> getNearbyEntities(ServerPlayer player, int range) {
         return getWorld().getNearbyEntities(LivingEntity.class,
-                new EntityPredicate().range(20),
+                TargetingConditions.forNonCombat().range(20),
                 player,
-                new AxisAlignedBB(
+                new AABB(
                         player.position().x - range,
                         player.position().y - range,
                         player.position().z - range,
