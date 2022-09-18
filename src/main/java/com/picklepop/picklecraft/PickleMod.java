@@ -1,4 +1,4 @@
-package com.picklepop.pickle;
+package com.picklepop.picklecraft;
 
 import com.mojang.logging.LogUtils;
 import net.minecraft.client.Minecraft;

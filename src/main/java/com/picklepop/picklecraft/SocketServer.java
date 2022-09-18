@@ -1,4 +1,4 @@
-package com.picklepop.pickle;
+package com.picklepop.picklecraft;
 
 import net.minecraft.core.Vec3i;
 import net.minecraft.world.entity.LivingEntity;
@@ -11,14 +11,9 @@ import net.minecraftforge.event.entity.living.LivingEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.json.simple.JSONAware;
-import org.json.simple.JSONObject;
-import org.json.simple.parser.ParseException;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
+import javax.json.*;
+import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.ServerSocket;
@@ -60,7 +55,7 @@ public class SocketServer extends Thread {
         return commandListeners;
     }
 
-    public void run () {
+    public void run() {
         LOGGER.info("starting server...");
         ServerSocket socket = null;
 
@@ -91,7 +86,7 @@ public class SocketServer extends Thread {
 
     @SubscribeEvent
     public void executeCommand(CommandEvent event) {
-        fireEvent(new JSONWriter().commandEventToJson(event));
+        fireEvent(new JSONWriter().commandEventToJson(event).build());
     }
 
     @SubscribeEvent
@@ -114,14 +109,14 @@ public class SocketServer extends Thread {
                 return;
             }
 
-            fireEvent(new JSONWriter().playerMoveEventToJson(player));
+            fireEvent(new JSONWriter().playerMoveEventToJson(player).build());
         }
     }
 
-    private void fireEvent(JSONObject event) {
+    private void fireEvent(JsonObject event) {
 //        LOGGER.info("event: " + event.toJSONString());
         commandListeners.forEach(listener -> {
-            listener.add(event.toJSONString());
+            listener.add(event.toString());
         });
     }
 
@@ -135,7 +130,6 @@ public class SocketServer extends Thread {
         }
 
         public void run() {
-
             BlockingQueue<String> messageQueue = new LinkedBlockingDeque<>();
             this.server.getCommandListeners().add(messageQueue);
 
@@ -146,7 +140,7 @@ public class SocketServer extends Thread {
             try {
                 out = new PrintWriter(socket.getOutputStream(), true);
 
-                while(true) {
+                while (true) {
                     try {
                         String message = messageQueue.take();
                         System.out.println("sending: " + message);
@@ -191,23 +185,22 @@ public class SocketServer extends Thread {
             BufferedReader in = null;
             try {
                 in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-                while(true) {
+                while (true) {
                     String message = in.readLine();
-                    if( message == null ) {
+                    if (message == null) {
                         System.out.println("disconnected");
                         break;
                     }
                     System.out.println("received: " + message);
-                    JSONObject json = new JSONObject();
+                    JsonObjectBuilder json = Json.createObjectBuilder();
                     try {
                         json = handleMessage(message, json);
                     } catch (Exception e) {
                         System.out.println("Exception:");
                         e.printStackTrace();
-                        json.put("status", "ERROR");
-                        json.put("error", e.getMessage());
+                        json.add("status", "ERROR").add("error", e.getMessage());
                     } finally {
-                        this.messageQueue.add(json.toJSONString() + "\n");
+                        this.messageQueue.add(json.build().toString() + "\n");
                     }
                 }
             } catch (IOException e) {
@@ -224,17 +217,18 @@ public class SocketServer extends Thread {
             }
         }
 
-        JSONObject handleMessage(String message, JSONObject json) throws Exception {
+        JsonObjectBuilder handleMessage(String message, JsonObjectBuilder json) throws Exception {
             Params request;
 
             try {
                 request = Params.parse(message);
                 System.out.println("recompiled: " + request.toString());
-            } catch (ParseException e) {
-                System.out.println("JSOM parse error");
-                json.put("status", "ERROR");
-                json.put("error", "JSON parse error: " + e.getMessage());
-                return json;
+            } catch (JsonException e) {
+                System.out.println("JSOM parse error: " + e.getMessage());
+                System.out.println("message: (" + message + ")");
+                return json
+                        .add("status", "ERROR")
+                        .add("error", "JSON parse error: " + e.getMessage());
             }
 
             String methodName = request.getString("method");
@@ -244,23 +238,23 @@ public class SocketServer extends Thread {
             try {
                 method = Controller.class.getMethod(methodName, Params.class);
             } catch (NoSuchMethodException e) {
-                System.out.println("Not found");
-                json.put("status", "ERROR");
-                json.put("error", "Not found: " + request.toString());
-                return json;
+                System.out.println("Method " + methodName + " not found in " + Controller.class);
+                return json
+                        .add("status", "ERROR")
+                        .add("error", "Not found: " + request.toString());
             }
 
             try {
-                JSONAware result = (JSONAware) method.invoke(this.controller, request);
-                json.put("status", "OK");
-                json.put("result", result);
-                return json;
+                JsonStructure result = (JsonStructure) method.invoke(this.controller, request);
+                return json
+                        .add("status", "OK")
+                        .add("result", result);
             } catch (InvocationTargetException e) {
                 System.out.println("Exception:");
                 e.getTargetException().printStackTrace();
-                json.put("status", "ERROR");
-                json.put("error", e.getTargetException().getMessage());
-                return json;
+                return json
+                        .add("status", "ERROR")
+                        .add("error", e.getTargetException().getMessage());
             }
         }
     }

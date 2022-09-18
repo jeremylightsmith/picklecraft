@@ -1,4 +1,4 @@
-package com.picklepop.pickle;
+package com.picklepop.picklecraft;
 
 import net.minecraftforge.event.entity.player.AttackEntityEvent;
 import net.minecraftforge.event.entity.player.EntityItemPickupEvent;

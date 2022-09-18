@@ -1,11 +1,9 @@
-package com.picklepop.pickle;
+package com.picklepop.picklecraft;
 
 import net.minecraft.world.entity.ai.targeting.TargetingConditions;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.advancements.critereon.EntityPredicate;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
