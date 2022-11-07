@@ -20,6 +20,13 @@ If at any point you are missing libraries in your IDE, or you've run into proble
 run `gradlew --refresh-dependencies` to refresh the local cache. `gradlew clean` to reset everything 
 {this does not affect your code} and then start the process again.
 
+Protobuf
+============================
+
+```
+$ protoc --java_out=${OUTPUT_DIR} path/to/your/proto/file
+```
+
 Additional Resources: 
 =========================
 Community Documentation: http://mcforge.readthedocs.io/en/latest/gettingstarted/  
